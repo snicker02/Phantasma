@@ -5,7 +5,7 @@ import { ViewController } from './engine/view.js';
 import { setupTabs } from './engine/tabs.js';
 import { MP4Muxer, findAvcConfig } from './engine/mp4.js';
 
-export const VERSION = '1.3.0';
+export const VERSION = '1.4.0';
 const KEY = 'phantasma';
 const TAB_QUERY = '(max-width: 760px), (max-height: 500px) and (orientation: landscape)';
 const $ = id => document.getElementById(id);
@@ -108,6 +108,10 @@ function select(id, init = null) {
   syncReveal(); syncPlay();
   paramRows = []; colorRows = [];
   buildParams(); buildColors();
+  vc.setOrbitMode(!!ill.orbit);
+  $('orbitCtl').hidden = !ill.orbit;
+  $('tiltCtl').hidden = !ill.orbit;
+  setHint();
   if (!init?.keepView) vc.reset();
   showErr('');
   dirty = true;
@@ -292,7 +296,14 @@ function syncViewInputs() {
   deg = ((deg + 180) % 360 + 360) % 360 - 180;
   rotIn.value = deg;
   $('rotOut').textContent = Math.round(deg) + '°';
+  const yaw = ((vc.orbit[0] * 180 / Math.PI + 180) % 360 + 360) % 360 - 180;
+  const pitch = vc.orbit[1] * 180 / Math.PI;
+  orbitIn.value = yaw; $('orbitOut').textContent = Math.round(yaw) + '°';
+  tiltIn.value = pitch; $('tiltOut').textContent = Math.round(pitch) + '°';
 }
+const orbitIn = $('orbitIn'), tiltIn = $('tiltIn');
+orbitIn.addEventListener('input', () => { vc.set({ orbit: [+orbitIn.value * Math.PI / 180, vc.orbit[1]] }); syncViewInputs(); dirty = true; });
+tiltIn.addEventListener('input', () => { vc.set({ orbit: [vc.orbit[0], +tiltIn.value * Math.PI / 180] }); syncViewInputs(); dirty = true; });
 zoomIn.addEventListener('input', () => { vc.set({ zoom: Math.exp(+zoomIn.value) }); syncViewInputs(); dirty = true; });
 rotIn.addEventListener('input', () => { vc.set({ rot: +rotIn.value * Math.PI / 180 }); syncViewInputs(); dirty = true; });
 speedIn.value = S.speed;
@@ -311,9 +322,14 @@ $('fsBtn').addEventListener('click', () => {
 
 // ---------- hint ----------
 const coarse = matchMedia('(pointer: coarse)').matches;
-$('hint').textContent = coarse
-  ? 'Drag · pinch · two fingers pan & twist · double-tap resets'
-  : 'Drag to pan · wheel to zoom · double-click resets · ← → switch · R reveal';
+function setHint() {
+  const orbit = !!S.ill?.orbit;
+  $('hint').textContent = coarse
+    ? (orbit ? 'Drag to orbit · pinch zoom · two fingers pan · double-tap resets'
+             : 'Drag · pinch · two fingers pan & twist · double-tap resets')
+    : (orbit ? 'Drag to orbit · Shift- or right-drag to pan · wheel zoom · double-click resets'
+             : 'Drag to pan · wheel to zoom · double-click resets · ← → switch · R reveal');
+}
 let hintTimer = setTimeout(() => { $('hint').hidden = true; }, 9000);
 function hideHintSoon() { clearTimeout(hintTimer); hintTimer = setTimeout(() => { $('hint').hidden = true; }, 1500); }
 
@@ -343,11 +359,13 @@ new ResizeObserver(resize).observe($('view'));
 function uniforms() {
   return {
     time: S.time, params: S.params, colors: S.colors.map(hex2rgb),
-    pan: vc.pan, zoom: vc.zoom, rot: vc.rot, reveal: S.reveal, phase: S.phase,
+    pan: vc.pan, zoom: vc.zoom, rot: vc.rot, reveal: S.reveal, phase: S.phase, orbit: vc.orbit,
   };
 }
+// raymarched (heavy) illusions skip supersampling except at Best quality, to stay smooth on phones
+function samples(quality) { return S.ill.heavy ? (quality >= 3 ? 2 : 1) : quality; }
 function draw(quality = S.quality) {
-  try { renderer.draw(S.ill, quality, uniforms()); }
+  try { renderer.draw(S.ill, samples(quality), uniforms()); }
   catch (e) { showErr(`${S.ill.name}: ${e.message}`); }
 }
 let last = performance.now();
@@ -374,7 +392,7 @@ $('pngBtn').addEventListener('click', () => {
   const k = Math.min(1, maxDim / Math.max(w, h));
   w = Math.floor(w * k); h = Math.floor(h * k);
   canvas.width = w; canvas.height = h;
-  draw(Math.max(2, S.quality));
+  draw(S.ill.heavy ? 3 : Math.max(2, S.quality));
   const aw = gl.drawingBufferWidth, ah = gl.drawingBufferHeight;
   const url = canvas.toDataURL('image/png');
   canvas.width = ow; canvas.height = oh;

@@ -1,28 +1,26 @@
 # Phantasma — optical illusion lab
 
-**v1.3.0**
+**v1.4.0**
 
-Thirty-six classic optical illusions, each rebuilt as a live, fully parametric WebGL1 shader. Every illusion has sliders for its geometry and colours, a short note on what to look for and why it works, and — where it makes sense — a **Reveal** toggle that shows you the truth.
+Forty-two classic optical illusions, each rebuilt as a live, fully parametric WebGL1 shader. That includes real 3D scenes, ray-traced and raymarched in the fragment shader, that you can orbit around. Every illusion has sliders for its geometry and colours, a short note on what to look for and why it works, and — where it makes sense — a **Reveal** toggle that shows you the truth.
 
 No dependencies, no build step. Open `index.html` from any static host (GitHub Pages works as-is).
 
 ## Illusions
 
-36 illusions in four groups:
+42 illusions in five groups:
 
-| Geometric | Ambiguous & impossible | Motion | Lightness & colour |
-|---|---|---|---|
-| Café wall | Necker cube | Rotating snakes (peripheral drift) | Scintillating / Hermann grid |
-| Zöllner lines | Penrose triangle | Ouchi | Simultaneous contrast |
-| Fraser spiral | Rubin vase | Pinna–Brelstaff rings | White's illusion |
-| Hering & Wundt | | Enigma | Colour afterimage (stare test) |
-| Müller-Lyer | | Lilac chaser | Photo afterimage (stare test) |
-| Ebbinghaus circles | | Motion aftereffect (stare test) | Troxler fading |
-| Kanizsa triangle | | Stepping feet | Shadow checker |
-| Ponzo | | Moiré | Cornsweet edge |
-| Poggendorff | | Barber pole | Mach bands |
-| Jastrow | | Breathing square | Munker colour |
-| Orbison | | Wagon wheel | Ehrenstein & neon spreading |
+- **Geometric**: café wall, Zöllner lines, Fraser spiral, Hering & Wundt, Müller-Lyer, Ebbinghaus circles, Kanizsa triangle, Ponzo, Poggendorff, Jastrow, Orbison
+- **Ambiguous & impossible**: Necker cube, Penrose triangle, Rubin vase
+- **3D** (drag to orbit the camera where noted):
+  - Penrose sculpture (orbit)
+  - Ames room (orbit)
+  - Anamorphic sculpture (orbit)
+  - Kinetic depth
+  - Silhouette spinner
+  - Bumps or dents (shape from shading)
+- **Motion**: rotating snakes, Ouchi, Pinna–Brelstaff rings, Enigma, lilac chaser, motion aftereffect (stare test), stepping feet, moiré, barber pole, breathing square, wagon wheel
+- **Lightness & colour**: scintillating / Hermann grid, simultaneous contrast, White's illusion, colour afterimage (stare test), photo afterimage (stare test), Troxler fading, shadow checker, Cornsweet edge, Mach bands, Munker colour, Ehrenstein & neon spreading
 
 ## Features
 
@@ -46,7 +44,8 @@ No dependencies, no build step. Open `index.html` from any static host (GitHub P
 | Pan | drag | one-finger drag, or two-finger drag |
 | Zoom | wheel (at cursor) | pinch |
 | Rotate | View → Rotation | two-finger twist |
-| Reset view | double-click, `0` | double-tap |
+| Orbit (3D illusions) | drag, or View → Orbit / Tilt; Shift- or right-drag pans | one-finger drag; two fingers pan |
+| Reset view (and orbit) | double-click, `0` | double-tap |
 | Previous / next illusion | `←` / `→` | ‹ › buttons |
 | Reveal / play-pause / fullscreen | `R` / `Space` / `F` | header buttons |
 
@@ -61,15 +60,15 @@ index.html          markup
 style.css           desktop + docked phone layout, touch sizing
 main.js             UI, state, render loop, stare tests, export, share links
 engine/mp4.js       dependency-free H.264 MP4 muxer + WebCodecs config probe
-engine/prelude.js   shared GLSL (AA helpers, SDFs) + supersampling main()
+engine/prelude.js   shared GLSL (AA helpers, SDFs, orbit camera) + supersampling main()
 engine/gl.js        WebGL1 renderer, program cache, photo texture
-engine/view.js      pointer-event pan / pinch / twist / double-tap controller
+engine/view.js      pointer-event pan / pinch / twist / orbit / double-tap controller
 engine/tabs.js      phone tab layout
 illusions/*.js      illusion definitions by category: params, colours, info text, GLSL
 tools/              validation scripts (not needed at runtime)
 ```
 
-To add an illusion, append an object to one of the `illusions/*.js` arrays. It needs `id`, `name`, `cat`, `params` (P0–P11), `colors` (C0–C3), `info`, and `glsl` defining `vec3 illusion(vec2 p)`. Optional fields are `animated`, `reveal: 'label'`, `stare: <param index>` and `tex: true`. A param or colour can also take `show: p => bool` (shown only when it applies, given the current param values `p`), and its `n` label can be a function `p => string`.
+To add an illusion, append an object to one of the `illusions/*.js` arrays. It needs `id`, `name`, `cat`, `params` (P0–P11), `colors` (C0–C3), `info`, and `glsl` defining `vec3 illusion(vec2 p)`. Optional fields are `orbit` (drag orbits the camera; read `u_orbit`), `heavy` (no supersampling below Best), `animated`, `reveal: 'label'`, `stare: <param index>` and `tex: true`. A param or colour can also take `show: p => bool` (shown only when it applies, given the current param values `p`), and its `n` label can be a function `p => string`.
 
 ## Validation
 
@@ -81,6 +80,15 @@ node tools/video-test.mjs         # MP4 + WebM export, verified with ffprobe / f
 
 ## Changelog
 
+- **1.4.0** — New **3D** category with six illusions:
+  - Penrose sculpture: a real object of three beams that only closes from one viewpoint
+  - Ames room: a projective-distorted room whose planes are ray-traced exactly, so orbiting shows the real trapezoid
+  - Anamorphic sculpture: scattered pieces that align into a ring, square or cube
+  - Kinetic depth: structure from motion on a cylinder or sphere
+  - Silhouette spinner: a bistable spinning figure
+  - Bumps or dents: shape from shading
+
+  Also added an orbit camera (drag to orbit, Orbit and Tilt sliders shown only for 3D illusions, Shift- or right-drag to pan). Raymarched illusions skip supersampling except at Best quality, to stay smooth on phones.
 - **1.3.0** — Added 15 illusions (36 total) and a new *Ambiguous & impossible* category:
   - Geometric: Ponzo, Poggendorff, Jastrow, Orbison
   - Ambiguous & impossible: Necker cube, Penrose triangle, Rubin vase

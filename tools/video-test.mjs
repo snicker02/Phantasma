@@ -60,6 +60,7 @@ async function exportOne(id, fmt, size, fps, len, expect) {
 
 await exportOne('lilac-chaser', 'mp4', '1280x720', 30, 2, { codec_name: 'h264', width: 1280, height: 720, r_frame_rate: '30/1', nb_read_frames: 60 });
 await exportOne('moire', 'mp4', '1080x1920', 60, 2, { codec_name: 'h264', width: 1080, height: 1920, r_frame_rate: '60/1', nb_read_frames: 120 });
+await exportOne('silhouette-spinner', 'mp4', '1280x720', 30, 2, { codec_name: 'h264', width: 1280, height: 720, r_frame_rate: '30/1', nb_read_frames: 60 });
 await exportOne('ouchi', 'webm', null, null, 2, { codec_name: 'vp9' });
 
 // default format is MP4 and video controls hide for still illusions

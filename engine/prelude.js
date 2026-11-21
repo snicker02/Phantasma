@@ -21,6 +21,7 @@ uniform float u_px;
 uniform sampler2D u_tex;
 uniform float u_texAspect;
 uniform float u_hasTex;
+uniform vec2 u_orbit;   // camera yaw, pitch (radians) for 3D illusions
 
 #define P0 u_p[0]
 #define P1 u_p[1]
@@ -65,6 +66,33 @@ vec3 hsv(float h, float s, float v){
   return v * mix(vec3(1.0), k, s);
 }
 float luma(vec3 c){ return dot(c, vec3(0.299, 0.587, 0.114)); }
+float hash11(float n){ return fract(sin(n * 127.1 + 311.7) * 43758.5453); }
+float hash21(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+
+// ---- 3D helpers ----
+// move eye0 around target by yaw (about +y) and pitch (elevation), keeping the distance
+vec3 orbitEye(vec3 eye0, vec3 target, float yaw, float pitch){
+  vec3 d = eye0 - target;
+  float r = length(d);
+  float h = length(d.xz);
+  vec2 dir = h > 1e-5 ? d.xz / h : vec2(0.0, -1.0);
+  float c = cos(yaw), s = sin(yaw);
+  dir = vec2(c * dir.x + s * dir.y, -s * dir.x + c * dir.y);
+  float el = clamp(atan(d.y, h) + pitch, -1.45, 1.45);
+  return target + vec3(dir.x * cos(el), sin(el), dir.y * cos(el)) * r;
+}
+// camera basis: columns = right, up, forward (screen x right, y up)
+mat3 lookAt(vec3 ro, vec3 ta){
+  vec3 f = normalize(ta - ro);
+  vec3 r = normalize(cross(vec3(0.0, 1.0, 0.0), f));
+  vec3 u = cross(f, r);
+  return mat3(r, u, f);
+}
+float sdCapsule(vec3 p, vec3 a, vec3 b, float r){
+  vec3 pa = p - a, ba = b - a;
+  float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+  return length(pa - ba * h) - r;
+}
 `;
 
 export function mainWrapper(ss) {
