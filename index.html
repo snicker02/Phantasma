@@ -6,7 +6,7 @@
 <title>Phantasma — optical illusion lab</title>
 <meta name="description" content="Parametric optical illusions rendered live in WebGL: geometric, motion, lightness and colour.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Ccircle cx=%228%22 cy=%228%22 r=%227%22 fill=%22%23d6a84a%22/%3E%3Ccircle cx=%228%22 cy=%228%22 r=%224%22 fill=%22%23111%22/%3E%3C/svg%3E">
-<link rel="stylesheet" href="style.css?v=1.2.0">
+<link rel="stylesheet" href="style.css?v=1.3.0">
 </head>
 <body>
 <header id="top">
@@ -75,6 +75,8 @@
           <select id="quality"><option value="1">Fast (1×)</option><option value="2" selected>Smooth (4×)</option><option value="3">Best (9×)</option></select>
         </div>
         <div class="row actions"><button id="viewReset" type="button">Reset view</button></div>
+        <div class="row actions resetall"><button id="resetAll" type="button" class="danger">Reset everything</button></div>
+        <p class="note">Restores every illusion's settings and colours, the view, quality, speed and export options to their defaults, and clears the loaded photo.</p>
       </section>
 
       <section class="sec" id="sec-export">
@@ -111,6 +113,6 @@
     </div>
   </aside>
 </main>
-<script type="module" src="main.js?v=1.2.0"></script>
+<script type="module" src="main.js?v=1.3.0"></script>
 </body>
 </html>

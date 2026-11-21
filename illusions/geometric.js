@@ -284,4 +284,165 @@ vec3 illusion(vec2 p){
   return col;
 }`,
   },
+
+  {
+    id: 'ponzo', name: 'Ponzo', cat: 'Geometric',
+    reveal: 'Show end guides',
+    params: [
+      { n: 'Rail angle °', min: 5, max: 40, step: 0.5, v: 16 },
+      { n: 'Bar length', min: 0.1, max: 0.8, step: 0.005, v: 0.36 },
+      { n: 'Bar spacing', min: 0.2, max: 1.4, step: 0.01, v: 0.85 },
+      { n: 'Line width', min: 0.004, max: 0.03, step: 0.001, v: 0.012 },
+      { n: 'Background', opts: ['Rails', 'Railway', 'None'], v: 1 },
+      { n: 'Bar height', min: -0.6, max: 0.6, step: 0.01, v: -0.05 },
+    ],
+    colors: [{ n: 'Paper', v: '#f5f2ea' }, { n: 'Rails', v: '#262626', show: p => p[4] !== 2 }, { n: 'Bars', v: '#c8322a' }],
+    info: {
+      see: 'The upper bar looks longer than the lower one.',
+      why: 'The two bars are identical. Converging lines read as parallel lines receding into the distance, so the upper bar is taken to be farther away — and something farther away that casts the same image must be bigger. Choose None for the background and the difference vanishes.',
+    },
+    glsl: `
+vec3 illusion(vec2 p){
+  float A = 1.25;
+  float a = radians(P0);
+  vec2 q = p - vec2(0.0, A);
+  vec2 d1 = vec2(sin(a), -cos(a)), d2 = vec2(-sin(a), -cos(a));
+  float dr = min(length(q - d1 * max(dot(q, d1), 0.0)), length(q - d2 * max(dot(q, d2), 0.0)));
+  vec3 col = C0;
+  if (P4 < 1.5) {
+    col = mix(col, C1, fill(dr - P3 * 0.5));
+    if (P4 > 0.5) {
+      float v = max(A - p.y, 1e-3);
+      float ties = (abs(fract(log(v) * 5.0) - 0.5) - 0.38) * v / 5.0;
+      float inside = abs(p.x) - v * tan(a) * 1.12;
+      col = mix(col, C1, fill(max(-ties, inside)) * 0.55);
+    }
+  }
+  float hb = P1 * 0.5;
+  float bars = min(sdSeg(p, vec2(-hb, P5 + P2 * 0.5), vec2(hb, P5 + P2 * 0.5)),
+                   sdSeg(p, vec2(-hb, P5 - P2 * 0.5), vec2(hb, P5 - P2 * 0.5)));
+  col = mix(col, C2, fill(bars - P3 * 0.9));
+  if (u_reveal > 0.5) col = mix(col, vec3(0.1, 0.45, 0.95), fill(abs(abs(p.x) - hb) - max(u_px, 0.003)) * 0.85);
+  return col;
+}`,
+  },
+  {
+    id: 'poggendorff', name: 'Poggendorff', cat: 'Geometric',
+    reveal: 'Show the true line',
+    params: [
+      { n: 'Line angle °', min: 10, max: 80, step: 0.5, v: 30 },
+      { n: 'Rectangle width', min: 0.05, max: 0.9, step: 0.005, v: 0.38 },
+      { n: 'Rectangle height', min: 0.4, max: 2, step: 0.01, v: 1.5 },
+      { n: 'Line width', min: 0.004, max: 0.03, step: 0.001, v: 0.012 },
+      { n: 'Rectangle', opts: ['Solid', 'Outline only'], v: 0 },
+    ],
+    colors: [{ n: 'Paper', v: '#f5f5f5' }, { n: 'Line', v: '#111111' }, { n: 'Rectangle', v: '#7d8fb3' }],
+    info: {
+      see: 'The diagonal line on the right seems to continue too high — as if it misses the left one.',
+      why: 'Both pieces belong to one straight line. Acute angles where the line meets the rectangle are perceived as larger than they are, which rotates each piece slightly and shifts where your eye extrapolates it. With only an outline the effect gets weaker but does not vanish.',
+    },
+    glsl: `
+vec3 illusion(vec2 p){
+  float a = radians(P0);
+  vec2 d = vec2(cos(a), sin(a));
+  float dl = abs(p.x * d.y - p.y * d.x) - P3 * 0.5;
+  float rect = sdBox(p, vec2(P1 * 0.5, P2 * 0.5));
+  vec3 col = C0;
+  float outside = fill(-(abs(p.x) - P1 * 0.5));
+  col = mix(col, C1, fill(dl) * outside);
+  if (P4 < 0.5) col = mix(col, C2, fill(rect));
+  else col = mix(col, C1, fill(abs(rect) - P3 * 0.5));
+  if (u_reveal > 0.5) col = mix(col, vec3(0.9, 0.12, 0.1), fill(abs(p.x * d.y - p.y * d.x) - P3 * 0.3) * 0.9);
+  return col;
+}`,
+  },
+  {
+    id: 'jastrow', name: 'Jastrow', cat: 'Geometric',
+    reveal: 'Place side by side',
+    params: [
+      { n: 'Arc span °', min: 30, max: 140, step: 1, v: 80 },
+      { n: 'Band thickness', min: 0.08, max: 0.5, step: 0.005, v: 0.26 },
+      { n: 'Inner radius', min: 0.3, max: 1.4, step: 0.01, v: 0.8 },
+      { n: 'Gap', min: 0.0, max: 0.4, step: 0.005, v: 0.08 },
+      { n: 'Colours', opts: ['A on top', 'B on top'], v: 0 },
+    ],
+    colors: [{ n: 'Paper', v: '#f7f7f2' }, { n: 'Shape A', v: '#e0a030' }, { n: 'Shape B', v: '#3a8ad0' }],
+    info: {
+      see: 'The lower curved band looks clearly larger than the upper one.',
+      why: 'They are identical. You compare the short inner edge of the lower band with the long outer edge of the upper band right next to it, and that local comparison wins over the overall size. Switch the colours to convince yourself it is not the colour.',
+    },
+    glsl: `
+float band(vec2 q, float R, float T, float span){
+  float r = length(q);
+  float a = atan(q.x, q.y);
+  float d1 = abs(r - (R + T * 0.5)) - T * 0.5;
+  float d2 = (abs(a) - span * 0.5) * max(r, 1e-3);
+  return max(d1, d2);
+}
+vec3 illusion(vec2 p){
+  float span = radians(P0), T = P1, R = P2;
+  float lo = R * cos(span * 0.5);          // lowest point of a band, relative to its centre
+  vec2 c1, c2;
+  if (u_reveal > 0.5) {
+    float xo = (R + T) * sin(span * 0.5) + 0.06;
+    float cy = -(R + T + lo) * 0.5;         // centre a single band vertically
+    // shrink the pair so both bands fit on narrow screens (same factor for both)
+    p *= max(1.0, (xo + (R + T) * sin(span * 0.5)) / 0.95);
+    c1 = vec2(-xo, cy);
+    c2 = vec2(xo, cy);
+  } else {
+    // second band = first shifted down by T + gap; centre the stacked pair
+    c1 = vec2(0.0, -(R + lo - P3) * 0.5);
+    c2 = c1 - vec2(0.0, T + P3);
+  }
+  vec3 ca = P4 < 0.5 ? C1 : C2, cb = P4 < 0.5 ? C2 : C1;
+  vec3 col = C0;
+  col = mix(col, cb, fill(band(p - c2, R, T, span)));
+  col = mix(col, ca, fill(band(p - c1, R, T, span)));
+  return col;
+}`,
+  },
+  {
+    id: 'orbison', name: 'Orbison', cat: 'Geometric',
+    reveal: 'Fade the background',
+    params: [
+      { n: 'Background', opts: ['Rings', 'Rays'], v: 0 },
+      { n: 'Density', min: 8, max: 60, step: 1, v: 26 },
+      { n: 'Shape', opts: ['Square', 'Circle', 'Triangle'], v: 0 },
+      { n: 'Shape size', min: 0.15, max: 0.9, step: 0.005, v: 0.5 },
+      { n: 'Line width', min: 0.003, max: 0.02, step: 0.0005, v: 0.006 },
+      { n: 'Shape offset', min: -0.6, max: 0.6, step: 0.01, v: 0 },
+    ],
+    colors: [{ n: 'Paper', v: '#fafafa' }, { n: 'Background lines', v: '#262626' }, { n: 'Shape', v: '#c22a2a' }],
+    info: {
+      see: 'On rings the square looks pinched inward; on rays its sides bulge. Circles look dented.',
+      why: 'The shape is geometrically perfect. As in the Hering illusion, each crossing angle is slightly misjudged and the errors add up along each side. Move the shape off-centre with Shape offset to see the distortion change.',
+    },
+    glsl: `
+float sdTri(vec2 p, float r){
+  const float k = 1.7320508;
+  p.x = abs(p.x) - r;
+  p.y = p.y + r / k;
+  if (p.x + k * p.y > 0.0) p = vec2(p.x - k * p.y, -k * p.x - p.y) / 2.0;
+  p.x -= clamp(p.x, -2.0 * r, 0.0);
+  return -length(p) * sign(p.y);
+}
+vec3 illusion(vec2 p){
+  float r = length(p);
+  float db;
+  if (P0 < 0.5) {
+    float s = 1.6 / P1;
+    db = abs(fract(r / s + 0.5) - 0.5) * s;
+  } else {
+    float a = atan(p.y, p.x);
+    float st = PI / P1;
+    float ph = floor(a / st + 0.5) * st;
+    db = abs(p.x * sin(ph) - p.y * cos(ph));
+  }
+  vec3 col = mix(C0, C1, fill(db - P4 * 0.5) * (u_reveal > 0.5 ? 0.15 : 1.0));
+  vec2 q = p - vec2(P5, 0.0);
+  float ds = P2 < 0.5 ? sdBox(q, vec2(P3)) : (P2 < 1.5 ? length(q) - P3 : sdTri(q, P3 * 1.2));
+  return mix(col, C2, fill(abs(ds) - P4 * 1.4));
+}`,
+  },
 ];

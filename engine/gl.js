@@ -76,6 +76,15 @@ export class Renderer {
     this.hasTex = true;
   }
 
+  clearImage() {
+    const gl = this.gl;
+    gl.bindTexture(gl.TEXTURE_2D, this.tex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([128, 128, 128, 255]));
+    this._texParams();
+    this.texAspect = 1;
+    this.hasTex = false;
+  }
+
   draw(ill, ss, u) {
     const gl = this.gl;
     const { prog, loc } = this.program(ill, ss);

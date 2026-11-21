@@ -285,4 +285,96 @@ vec3 illusion(vec2 p){
   return mix(C0, C1, ink);
 }`,
   },
+
+  {
+    id: 'barber-pole', name: 'Barber pole', cat: 'Motion', animated: true,
+    reveal: 'Remove the window',
+    params: [
+      { n: 'Stripe angle °', min: 10, max: 80, step: 0.5, v: 45 },
+      { n: 'Stripes', min: 4, max: 30, step: 1, v: 10 },
+      { n: 'Speed', min: -1, max: 1, step: 0.01, v: 0.25 },
+      { n: 'Window', opts: ['Tall', 'Wide', 'Square', 'Circle'], v: 0 },
+      { n: 'Window size', min: 0.2, max: 1, step: 0.005, v: 0.55 },
+    ],
+    colors: [{ n: 'Stripe A', v: '#c0242c' }, { n: 'Stripe B', v: '#f4f4f4' }, { n: 'Surround', v: '#222222' }],
+    info: {
+      see: 'In the tall window the stripes run upward; in the wide window they run sideways; in the circle they move diagonally.',
+      why: 'The stripes only ever move diagonally (perpendicular to themselves). A single straight edge seen through a hole is ambiguous — the aperture problem — so the brain uses the ends of the stripes where they meet the window edge, and those terminators slide along the longest edge. Remove the window to see the true motion.',
+    },
+    glsl: `
+vec3 illusion(vec2 p){
+  float a = radians(P0);
+  vec2 n = vec2(cos(a), sin(a));
+  float cell = 2.0 / P1;
+  float t = sq((dot(p, n) - u_time * P2) / cell, cell);
+  vec3 col = mix(C0, C1, t);
+  if (u_reveal > 0.5) return col;
+  float S = P4;
+  float win = P3 < 0.5 ? sdBox(p, vec2(S * 0.32, S * 1.6))
+            : P3 < 1.5 ? sdBox(p, vec2(S * 1.6, S * 0.32))
+            : P3 < 2.5 ? sdBox(p, vec2(S))
+            : length(p) - S;
+  return mix(C2, col, fill(win));
+}`,
+  },
+  {
+    id: 'breathing-square', name: 'Breathing square', cat: 'Motion', animated: true,
+    reveal: 'Make the covers see-through',
+    params: [
+      { n: 'Square size', min: 0.3, max: 1, step: 0.005, v: 0.62 },
+      { n: 'Cover size', min: 0.15, max: 0.6, step: 0.005, v: 0.42 },
+      { n: 'Cover spacing', min: 0.2, max: 1, step: 0.005, v: 0.52 },
+      { n: 'Rotation speed', min: -2, max: 2, step: 0.01, v: 0.45 },
+    ],
+    colors: [{ n: 'Background', v: '#ffffff' }, { n: 'Square', v: '#2a52be' }, { n: 'Covers', v: '#f0c419' }],
+    info: {
+      see: 'The blue square seems to swell and shrink — breathing — rather than turning.',
+      why: 'It is a rigid square rotating at constant speed. With its corners hidden, the only visible parts are edge segments, which slide along the covers in a way that also fits a square changing size. The visual system picks the expansion reading. Make the covers see-through and the rotation is obvious.',
+    },
+    glsl: `
+vec3 illusion(vec2 p){
+  vec2 q = rot(-u_time * P3) * p;
+  vec3 col = mix(C0, C1, fill(sdBox(q, vec2(P0))));
+  vec2 c = abs(p) - vec2(P2);
+  float cover = sdBox(c, vec2(P1));
+  if (u_reveal > 0.5) return mix(col, C2, fill(abs(cover) - 0.006) );
+  return mix(col, C2, fill(cover));
+}`,
+  },
+  {
+    id: 'wagon-wheel', name: 'Wagon wheel', cat: 'Motion', animated: true,
+    reveal: 'Remove the strobe',
+    params: [
+      { n: 'Spokes', min: 3, max: 24, step: 1, v: 8 },
+      { n: 'True speed (rev/s)', min: -4, max: 4, step: 0.01, v: 1.85 },
+      { n: 'Strobe rate (Hz)', min: 4, max: 60, step: 0.5, v: 16 },
+      { n: 'Spoke width', min: 0.01, max: 0.15, step: 0.002, v: 0.045 },
+      { n: 'Marked spoke', opts: ['No', 'Yes'], v: 0 },
+    ],
+    colors: [{ n: 'Background', v: '#101318' }, { n: 'Wheel', v: '#d9cdb0' }, { n: 'Marker', v: '#e0402a', show: p => p[4] === 1 }],
+    info: {
+      see: 'The wheel creeps slowly backwards, stands still, or races — depending only on the strobe rate.',
+      why: 'Temporal aliasing, as in films of stagecoach wheels. The wheel is shown only at the strobe instants; if each spoke moves almost a full spoke-gap between flashes, the nearest spoke in the next frame lies slightly behind, so the wheel seems to turn backwards. Mark one spoke to follow the true motion, or remove the strobe.',
+    },
+    glsl: `
+vec3 illusion(vec2 p){
+  float t = u_reveal > 0.5 ? u_time : floor(u_time * P2) / P2;
+  float ang = t * TAU * P1;
+  float r = length(p), th = atan(p.y, p.x) - ang;
+  float st = TAU / P0;
+  float k = floor(th / st + 0.5);
+  float dth = th - k * st;
+  float spoke = r * abs(sin(dth)) - P3 * 0.5;
+  spoke = max(spoke, r - 0.78);
+  float rim = abs(r - 0.8) - 0.035;
+  float hub = r - 0.1;
+  float wheel = min(min(spoke, rim), hub);
+  vec3 col = mix(C0, C1, fill(wheel));
+  if (P4 > 0.5) {
+    float km = mod(k + P0, P0);
+    if (km < 0.5) col = mix(col, C2, fill(max(spoke, -hub)));
+  }
+  return col;
+}`,
+  },
 ];

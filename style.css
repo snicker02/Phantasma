@@ -18,6 +18,9 @@ button, select {
 }
 button:hover { border-color: #444754; }
 button.accent, button.pending { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+button.danger { border-color: #7a3030; color: #f0b4b4; }
+button.danger.armed { background: #c23b3b; border-color: #c23b3b; color: #fff; font-weight: 600; }
+.resetall { margin-top: 18px; padding-top: 12px; border-top: 1px dashed var(--line); }
 button.on { background: #33302a; border-color: var(--accent); color: var(--accent); }
 
 /* header */
