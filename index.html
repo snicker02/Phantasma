@@ -6,7 +6,7 @@
 <title>Phantasma — optical illusion lab</title>
 <meta name="description" content="Parametric optical illusions rendered live in WebGL: geometric, motion, lightness and colour.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Ccircle cx=%228%22 cy=%228%22 r=%227%22 fill=%22%23d6a84a%22/%3E%3Ccircle cx=%228%22 cy=%228%22 r=%224%22 fill=%22%23111%22/%3E%3C/svg%3E">
-<link rel="stylesheet" href="style.css?v=1.0.1">
+<link rel="stylesheet" href="style.css?v=1.1.0">
 </head>
 <body>
 <header id="top">
@@ -70,7 +70,7 @@
         <h2>View</h2>
         <div class="ctl"><label>Zoom <output id="zoomOut"></output></label><input id="zoom" type="range" min="-2.3" max="3.6" step="0.01" value="0"></div>
         <div class="ctl"><label>Rotation <output id="rotOut"></output></label><input id="rotIn" type="range" min="-180" max="180" step="1" value="0"></div>
-        <div class="ctl"><label>Animation speed <output id="speedOut"></output></label><input id="speed" type="range" min="0" max="3" step="0.05" value="1"></div>
+        <div class="ctl" id="speedCtl"><label>Animation speed <output id="speedOut"></output></label><input id="speed" type="range" min="0" max="3" step="0.05" value="1"></div>
         <div class="ctl"><label>Quality</label>
           <select id="quality"><option value="1">Fast (1×)</option><option value="2" selected>Smooth (4×)</option><option value="3">Best (9×)</option></select>
         </div>
@@ -96,6 +96,6 @@
     </div>
   </aside>
 </main>
-<script type="module" src="main.js?v=1.0.1"></script>
+<script type="module" src="main.js?v=1.1.0"></script>
 </body>
 </html>

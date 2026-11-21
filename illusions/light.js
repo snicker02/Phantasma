@@ -7,10 +7,10 @@ export default [
       { n: 'Variant', opts: ['Scintillating', 'Hermann'], v: 0 },
       { n: 'Cells', min: 4, max: 20, step: 1, v: 9 },
       { n: 'Line width', min: 0.05, max: 0.5, step: 0.005, v: 0.18 },
-      { n: 'Dot size', min: 0.1, max: 1.8, step: 0.01, v: 1.3 },
+      { n: 'Dot size', min: 0.1, max: 1.8, step: 0.01, v: 1.3, show: p => p[0] === 0 },
       { n: 'Rotation °', min: 0, max: 45, step: 0.5, v: 0 },
     ],
-    colors: [{ n: 'Squares', v: '#000000' }, { n: 'Grey lines', v: '#808080' }, { n: 'Dots / white lines', v: '#ffffff' }],
+    colors: [{ n: 'Squares', v: '#000000' }, { n: 'Grey lines', v: '#808080', show: p => p[0] === 0 }, { n: p => p[0] === 0 ? 'Dots' : 'Lines', v: '#ffffff' }],
     info: {
       see: 'Scintillating: black dots flash in the white discs wherever you are not looking. Hermann: grey smudges at the intersections.',
       why: 'Every disc is pure white. Classic lateral-inhibition accounts explain the Hermann spots, but the scintillating version breaks with a slight rotation or with curved lines, so orientation-tuned cortical cells are now thought to be involved. Try 45° rotation.',
@@ -88,7 +88,7 @@ vec3 illusion(vec2 p){
     id: 'afterimage', name: 'Colour afterimage', cat: 'Lightness & colour', stare: 2,
     params: [
       { n: 'Pattern', opts: ['Rings', 'Checker', 'Star', 'Stripes'], v: 1 },
-      { n: 'Scale', min: 2, max: 20, step: 0.5, v: 6 },
+      { n: p => p[0] === 2 ? 'Points' : 'Scale', min: 2, max: 20, step: 0.5, v: 6 },
       { n: 'Stare (s)', min: 5, max: 60, step: 1, v: 20 },
       { n: 'Test grey', min: 0, max: 1, step: 0.01, v: 0.9 },
     ],

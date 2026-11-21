@@ -1,6 +1,6 @@
 # Phantasma — optical illusion lab
 
-**v1.0.1**
+**v1.1.0**
 
 Twenty-one classic optical illusions, each rebuilt as a live, fully parametric WebGL1 shader. Every illusion has sliders for its geometry and colours, a short note on what to look for and why it works, and — where it makes sense — a **Reveal** toggle that shows you the truth.
 
@@ -60,7 +60,7 @@ illusions/*.js      illusion definitions: params, colours, info text, GLSL
 tools/              validation scripts (not needed at runtime)
 ```
 
-To add an illusion, append an object to one of the `illusions/*.js` arrays. It needs `id`, `name`, `cat`, `params` (P0–P11), `colors` (C0–C3), `info`, and `glsl` defining `vec3 illusion(vec2 p)`. Optional fields are `animated`, `reveal: 'label'`, `stare: <param index>` and `tex: true`.
+To add an illusion, append an object to one of the `illusions/*.js` arrays. It needs `id`, `name`, `cat`, `params` (P0–P11), `colors` (C0–C3), `info`, and `glsl` defining `vec3 illusion(vec2 p)`. Optional fields are `animated`, `reveal: 'label'`, `stare: <param index>` and `tex: true`. A param or colour can also take `show: p => bool` (shown only when it applies, given the current param values `p`), and its `n` label can be a function `p => string`.
 
 ## Validation
 
@@ -71,6 +71,7 @@ node tools/layout-test.mjs        # headless Chrome: 390×844 + 844×390 touch, 
 
 ## Changelog
 
+- **1.1.0** — The panel now shows only the controls that apply to the current illusion and mode. Mode-specific sliders and colours hide when their mode is off (e.g. *Check twist* when the Fraser background is plain, *Dot size* in Hermann mode, *Wobble speed* when wobble is 0), and labels follow the mode (*Tightness* → *Ring density*). The Reveal, Play and animation-speed controls only appear for illusions that have them.
 - **1.0.1** — Added Claude AI credit to the app and README.
 - **1.0.0** — First release: 21 illusions, Reveal, stare tests, photo afterimage, PNG/WebM export, share links, phone layout.
 
