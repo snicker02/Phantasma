@@ -3,8 +3,9 @@ import { ILLUSIONS, CATEGORIES, byId } from './illusions/index.js';
 import { Renderer } from './engine/gl.js';
 import { ViewController } from './engine/view.js';
 import { setupTabs } from './engine/tabs.js';
+import { MP4Muxer, findAvcConfig } from './engine/mp4.js';
 
-export const VERSION = '1.1.0';
+export const VERSION = '1.2.0';
 const KEY = 'phantasma';
 const TAB_QUERY = '(max-width: 760px), (max-height: 500px) and (orientation: landscape)';
 const $ = id => document.getElementById(id);
@@ -26,7 +27,7 @@ function save() {
 const S = {
   ill: null, params: [], colors: [], reveal: false,
   playing: true, speed: clampNum(store.speed, 0, 3, 1), quality: [1, 2, 3].includes(store.quality) ? store.quality : 2,
-  time: 0, phase: 0, stare: null, recording: false,
+  time: 0, phase: 0, stare: null, recording: false, exporting: false,
 };
 
 const canvas = $('cv');
@@ -101,6 +102,7 @@ function select(id, init = null) {
   $('revealBtn').title = ill.reveal ? ill.reveal + ' (R)' : '';
   $('playBtn').hidden = !ill.animated;
   $('speedCtl').hidden = !ill.animated;
+  $('videoCtl').hidden = !ill.animated;
   $('stareRow').hidden = ill.stare === undefined;
   $('photoRow').hidden = !ill.tex;
   syncReveal(); syncPlay();
@@ -329,6 +331,7 @@ addEventListener('keydown', e => {
 
 // ---------- sizing ----------
 function resize() {
+  if (S.exporting) return;
   const r = $('view').getBoundingClientRect();
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr));
@@ -353,6 +356,7 @@ function frame(now) {
   last = now;
   if (S.ill.animated && S.playing) { S.time += dt * S.speed; dirty = true; }
   tickStare(now);
+  if (S.exporting) { requestAnimationFrame(frame); return; }
   if (dirty || S.recording) { draw(); dirty = false; }
   requestAnimationFrame(frame);
 }
@@ -378,6 +382,7 @@ $('pngBtn').addEventListener('click', () => {
   download(url, `phantasma-${S.ill.id}-${aw}x${ah}.png`);
   note.textContent = `Saved ${aw} × ${ah} PNG.`;
 });
+function fmtBytes(n) { return n < 1e6 ? Math.max(1, Math.round(n / 1e3)) + ' KB' : (n / 1e6).toFixed(1) + ' MB'; }
 function download(href, name) {
   const a = document.createElement('a');
   a.href = href; a.download = name;
@@ -385,41 +390,165 @@ function download(href, name) {
 }
 
 // ---------- export: video ----------
-let rec = null;
-const recLen = $('recLen');
-$('recOut').textContent = recLen.value + ' s';
-recLen.addEventListener('input', () => { $('recOut').textContent = recLen.value + ' s'; });
-$('recBtn').addEventListener('click', () => {
+// MP4 (default): frames are rendered one by one at exact time steps and encoded with
+// WebCodecs H.264, then muxed by engine/mp4.js — any size/fps, no dropped frames.
+// If WebCodecs H.264 isn't available, MP4 falls back to real-time MediaRecorder capture
+// where the browser supports it (Safari). WebM always uses real-time MediaRecorder.
+let rec = null, offlineJob = null;
+const vid = Object.assign({ fmt: 'mp4', size: '1920x1080', fps: 60, len: 6 }, store.video || {});
+const vidFmt = $('vidFmt'), vidSize = $('vidSize'), vidFps = $('vidFps'), recLen = $('recLen'), recBtn = $('recBtn');
+const hasWebCodecs = typeof VideoEncoder !== 'undefined' && typeof VideoFrame !== 'undefined';
+const recMime = fmt => {
+  if (!window.MediaRecorder || !canvas.captureStream) return null;
+  const list = fmt === 'mp4'
+    ? ['video/mp4;codecs=avc1.640028', 'video/mp4;codecs=avc1', 'video/mp4']
+    : ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+  return list.find(m => MediaRecorder.isTypeSupported(m)) || null;
+};
+let mp4Mode = hasWebCodecs ? 'webcodecs' : (recMime('mp4') ? 'recorder' : null);
+if (!recMime('webm')) vidFmt.querySelector('option[value=webm]').disabled = true;
+
+function syncVideoUI() {
+  const fmt = vidFmt.value;
+  const offline = fmt === 'mp4' && mp4Mode === 'webcodecs';
+  $('vidSizeCtl').hidden = !offline;
+  $('vidFpsCtl').hidden = !offline;
+  if (!rec && !offlineJob) recBtn.textContent = 'Export ' + fmt.toUpperCase();
+  $('recOut').textContent = recLen.value + ' s';
+}
+function saveVideo() {
+  store.video = { fmt: vidFmt.value, size: vidSize.value, fps: +vidFps.value, len: +recLen.value };
+  save();
+}
+vidFmt.value = vid.fmt; vidSize.value = vid.size; vidFps.value = String(vid.fps); recLen.value = vid.len;
+if (vidFmt.selectedIndex < 0 || vidFmt.selectedOptions[0].disabled) vidFmt.value = 'mp4';
+if (vidSize.selectedIndex < 0) vidSize.value = '1920x1080';
+if (vidFps.selectedIndex < 0) vidFps.value = '60';
+for (const el of [vidFmt, vidSize, vidFps]) el.addEventListener('change', () => { syncVideoUI(); saveVideo(); });
+recLen.addEventListener('input', () => { syncVideoUI(); saveVideo(); });
+
+// confirm H.264 encoding really works here; otherwise degrade gracefully
+if (hasWebCodecs) {
+  findAvcConfig(1280, 720, 30, 5e6).then(cfg => {
+    if (!cfg) mp4Mode = recMime('mp4') ? 'recorder' : null;
+    if (!mp4Mode) {
+      vidFmt.querySelector('option[value=mp4]').disabled = true;
+      if (!vidFmt.querySelector('option[value=webm]').disabled) vidFmt.value = 'webm';
+      note.textContent = 'MP4 export is not supported in this browser — using WebM.';
+    }
+    syncVideoUI();
+  });
+} else if (!mp4Mode) {
+  vidFmt.querySelector('option[value=mp4]').disabled = true;
+  if (!vidFmt.querySelector('option[value=webm]').disabled) vidFmt.value = 'webm';
+}
+syncVideoUI();
+
+const even = v => Math.max(2, Math.floor(v / 2) * 2);
+function videoDims() {
+  if (vidSize.value === 'screen') return [even(canvas.width), even(canvas.height)];
+  return vidSize.value.split('x').map(Number);
+}
+
+recBtn.addEventListener('click', async () => {
+  if (offlineJob) { offlineJob.stop = true; return; }
   if (rec) { rec.stop(); return; }
-  if (!window.MediaRecorder || !canvas.captureStream) { note.textContent = 'Video recording is not supported in this browser.'; return; }
-  const mime = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4'].find(m => MediaRecorder.isTypeSupported(m));
-  if (!mime) { note.textContent = 'No supported video format in this browser.'; return; }
+  const fmt = vidFmt.value;
+  if (fmt === 'mp4' && mp4Mode === 'webcodecs') {
+    const [w, h] = videoDims();
+    const fps = +vidFps.value;
+    const bitrate = Math.round(Math.min(60e6, Math.max(4e6, w * h * fps * 0.15)));
+    const cfg = await findAvcConfig(w, h, fps, bitrate);
+    if (cfg) { await exportOffline(cfg, w, h, fps, +recLen.value); return; }
+    if (!recMime('mp4')) { note.textContent = `This browser can't encode H.264 at ${w} × ${h}. Try a smaller size.`; return; }
+    note.textContent = `H.264 at ${w} × ${h} isn't available here — recording the view in real time instead.`;
+  }
+  recordRealtime(fmt);
+});
+
+async function exportOffline(cfg, w, h, fps, len) {
+  const gl = renderer.gl;
+  const ow = canvas.width, oh = canvas.height, t0 = S.time;
+  const total = Math.round(len * fps);
+  const animate = S.ill.animated && S.playing;
+  const job = offlineJob = { stop: false };
+  const mux = new MP4Muxer({ width: w, height: h, fps });
+  let encErr = null;
+  const encoder = new VideoEncoder({ output: (c, m) => mux.addChunk(c, m), error: e => { encErr = e; } });
+  S.exporting = true;
+  recBtn.classList.add('pending');
+  let done = 0;
+  try {
+    canvas.width = w; canvas.height = h;
+    if (gl.drawingBufferWidth !== w || gl.drawingBufferHeight !== h) throw new Error(`GPU limit: can't render ${w} × ${h} here.`);
+    encoder.configure(cfg);
+    for (let i = 0; i < total && !job.stop; i++) {
+      if (encErr) throw encErr;
+      if (animate) S.time = t0 + (i / fps) * S.speed;
+      draw();
+      const frame = new VideoFrame(canvas, { timestamp: Math.round(i * 1e6 / fps), duration: Math.round(1e6 / fps) });
+      encoder.encode(frame, { keyFrame: i % (fps * 2) === 0 });
+      frame.close();
+      done = i + 1;
+      while (encoder.encodeQueueSize > 4) await new Promise(r => setTimeout(r, 1));
+      if (i % 4 === 0) {
+        recBtn.textContent = `Rendering ${Math.round(done / total * 100)}% (tap to stop)`;
+        await new Promise(r => setTimeout(r, 0));
+      }
+    }
+    await encoder.flush();
+    if (encErr) throw encErr;
+    const blob = mux.finalize();
+    const url = URL.createObjectURL(blob);
+    download(url, `phantasma-${S.ill.id}-${w}x${h}-${fps}fps.mp4`);
+    setTimeout(() => URL.revokeObjectURL(url), 15000);
+    note.textContent = `Saved ${w} × ${h} MP4, ${(done / fps).toFixed(1)} s, ${fmtBytes(blob.size)}.`;
+  } catch (e) {
+    note.textContent = 'MP4 export failed: ' + (e?.message || e);
+  } finally {
+    try { if (encoder.state !== 'closed') encoder.close(); } catch { /* already closed */ }
+    canvas.width = ow; canvas.height = oh;
+    S.time = t0;
+    S.exporting = false;
+    offlineJob = null;
+    recBtn.classList.remove('pending');
+    syncVideoUI();
+    resize();
+    dirty = true;
+  }
+}
+
+function recordRealtime(fmt) {
+  const mime = recMime(fmt);
+  if (!mime) { note.textContent = `${fmt.toUpperCase()} recording is not supported in this browser.`; return; }
+  const ext = mime.includes('mp4') ? 'mp4' : 'webm';
   const stream = canvas.captureStream(60);
   const chunks = [];
   rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 12e6 });
   rec.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+  let recTimer = 0;
   rec.onstop = () => {
     S.recording = false; rec = null;
     stream.getTracks().forEach(t => t.stop());
     clearInterval(recTimer);
-    $('recBtn').textContent = 'Record ' + (mime.includes('mp4') ? 'MP4' : 'WebM');
-    $('recBtn').classList.remove('pending');
+    recBtn.classList.remove('pending');
+    syncVideoUI();
     const blob = new Blob(chunks, { type: mime.split(';')[0] });
     const url = URL.createObjectURL(blob);
-    download(url, `phantasma-${S.ill.id}.${mime.includes('mp4') ? 'mp4' : 'webm'}`);
-    setTimeout(() => URL.revokeObjectURL(url), 10000);
-    note.textContent = `Saved ${(blob.size / 1e6).toFixed(1)} MB video.`;
+    download(url, `phantasma-${S.ill.id}.${ext}`);
+    setTimeout(() => URL.revokeObjectURL(url), 15000);
+    note.textContent = `Saved ${fmtBytes(blob.size)} ${ext.toUpperCase()} (real-time capture of the view).`;
   };
   S.recording = true;
   rec.start(250);
   const t0 = performance.now(), len = +recLen.value;
-  const recTimer = setInterval(() => {
+  recTimer = setInterval(() => {
     const left = Math.ceil(len - (performance.now() - t0) / 1000);
-    $('recBtn').textContent = `Recording… ${Math.max(0, left)} s (tap to stop)`;
+    recBtn.textContent = `Recording… ${Math.max(0, left)} s (tap to stop)`;
     if (left <= 0 && rec && rec.state === 'recording') rec.stop();
   }, 200);
-  $('recBtn').classList.add('pending');
-});
+  recBtn.classList.add('pending');
+}
 
 // ---------- share link ----------
 let hashTimer = 0;
