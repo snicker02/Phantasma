@@ -3,7 +3,7 @@ import { buildFragment } from './prelude.js';
 
 const VERT = 'attribute vec2 a; void main(){ gl_Position = vec4(a, 0.0, 1.0); }';
 const UNIFORMS = ['u_res', 'u_time', 'u_p', 'u_c0', 'u_c1', 'u_c2', 'u_c3', 'u_pan', 'u_zoom',
-  'u_rot', 'u_reveal', 'u_phase', 'u_px', 'u_tex', 'u_texAspect', 'u_hasTex'];
+  'u_rot', 'u_reveal', 'u_phase', 'u_px', 'u_tex', 'u_texAspect', 'u_hasTex', 'u_orbit'];
 
 export class Renderer {
   constructor(canvas) {
@@ -113,6 +113,7 @@ export class Renderer {
     gl.uniform1i(loc.u_tex, 0);
     gl.uniform1f(loc.u_texAspect, this.texAspect);
     gl.uniform1f(loc.u_hasTex, this.hasTex ? 1 : 0);
+    gl.uniform2f(loc.u_orbit, u.orbit ? u.orbit[0] : 0, u.orbit ? u.orbit[1] : 0);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
 }

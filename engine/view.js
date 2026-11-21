@@ -1,12 +1,20 @@
-// Pan / zoom / rotate controller for the canvas.
-// Mouse: drag pans, wheel zooms at cursor. Touch: one finger drags, pinch zooms,
-// two-finger drag pans, two-finger twist rotates. Double-tap / double-click resets.
+// Pan / zoom / rotate / orbit controller for the canvas.
+// 2D illusions — mouse: drag pans, wheel zooms at cursor. Touch: one finger drags, pinch zooms,
+//   two-finger drag pans, two-finger twist rotates.
+// 3D illusions (orbit mode) — one finger / mouse drag orbits the camera; Shift-drag,
+//   right-drag or two fingers pan; pinch / wheel zoom; twist rotates.
+// Double-tap / double-click resets everything (including the orbit).
+
+const ORBIT_SPEED = 0.008; // radians per CSS pixel
+const PITCH_LIMIT = 1.4;
 
 export class ViewController {
   constructor(el, onChange) {
     this.el = el;
     this.onChange = onChange;
     this.zoom = 1; this.rot = 0; this.pan = [0, 0];
+    this.orbit = [0, 0];
+    this.orbitMode = false;
     this.pointers = new Map();
     this.gesture = null;
     this.lastTap = { t: 0, x: 0, y: 0 };
@@ -16,17 +24,21 @@ export class ViewController {
     el.addEventListener('pointerup', e => this._up(e, false));
     el.addEventListener('pointercancel', e => this._up(e, true));
     el.addEventListener('wheel', e => this._wheel(e), { passive: false });
+    el.addEventListener('contextmenu', e => { if (this.orbitMode) e.preventDefault(); });
   }
+
+  setOrbitMode(on) { this.orbitMode = !!on; }
 
   set(v) {
     if (v.zoom !== undefined) this.zoom = v.zoom;
     if (v.rot !== undefined) this.rot = v.rot;
     if (v.pan !== undefined) this.pan = [v.pan[0], v.pan[1]];
+    if (v.orbit !== undefined) this.orbit = [v.orbit[0], v.orbit[1]];
   }
 
-  reset() { this.zoom = 1; this.rot = 0; this.pan = [0, 0]; this._emit(); }
+  reset() { this.zoom = 1; this.rot = 0; this.pan = [0, 0]; this.orbit = [0, 0]; this._emit(); }
 
-  _emit() { this.onChange({ zoom: this.zoom, rot: this.rot, pan: this.pan }); }
+  _emit() { this.onChange({ zoom: this.zoom, rot: this.rot, pan: this.pan, orbit: this.orbit }); }
 
   _local(e) {
     const r = this.el.getBoundingClientRect();
@@ -61,15 +73,18 @@ export class ViewController {
         z0: this.zoom, r0: this.rot,
       };
     } else if (pts.length === 1) {
-      this.gesture = { type: 'drag', x: pts[0].x, y: pts[0].y };
+      const p = pts[0];
+      const type = this.orbitMode && !p.pan ? 'orbit' : 'drag';
+      this.gesture = { type, x: p.x, y: p.y };
     } else this.gesture = null;
   }
 
   _down(e) {
-    if (e.button !== undefined && e.button > 0 && e.pointerType === 'mouse') return;
+    if (e.pointerType === 'mouse' && e.button > 0 && !(this.orbitMode && e.button === 2)) return;
     this.el.setPointerCapture?.(e.pointerId);
     const l = this._local(e);
-    this.pointers.set(e.pointerId, { x: l.x, y: l.y, t: performance.now(), sx: l.x, sy: l.y });
+    const pan = e.pointerType === 'mouse' && (e.shiftKey || e.button === 2);
+    this.pointers.set(e.pointerId, { x: l.x, y: l.y, t: performance.now(), sx: l.x, sy: l.y, pan });
     this._startGesture();
   }
 
@@ -79,7 +94,13 @@ export class ViewController {
     const l = this._local(e);
     p.x = l.x; p.y = l.y;
     const g = this.gesture;
-    if (g.type === 'drag' && this.pointers.size === 1) {
+    if (g.type === 'orbit' && this.pointers.size === 1) {
+      const dx = l.x - g.x, dy = l.y - g.y;
+      this.orbit = [this.orbit[0] - dx * ORBIT_SPEED,
+        Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, this.orbit[1] + dy * ORBIT_SPEED))];
+      g.x = l.x; g.y = l.y;
+      this._emit();
+    } else if (g.type === 'drag' && this.pointers.size === 1) {
       const W0 = this._world(g.x, g.y, l.w, l.h);
       const W1 = this._world(l.x, l.y, l.w, l.h);
       this.pan = [this.pan[0] + W0[0] - W1[0], this.pan[1] + W0[1] - W1[1]];

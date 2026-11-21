@@ -188,6 +188,44 @@ for (const cfg of configs) {
     if (!/pinch/.test(hint)) fail(`${cfg.name}: touch hint missing`);
   }
 
+  // 3D illusions: drag orbits instead of panning; Orbit/Tilt sliders only for orbit illusions
+  {
+    await page.evaluate(() => window.__phantasma.select('ames-room'));
+    const vb = await page.locator('#view').boundingBox();
+    const cx = vb.x + vb.width / 2, cy = vb.y + vb.height / 2;
+    if (cfg.hasTouch) {
+      const cdp = await ctx.newCDPSession(page);
+      const touch = (type, pts) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: pts.map((p, i) => ({ x: p[0], y: p[1], id: i })) });
+      await touch('touchStart', [[cx, cy]]);
+      for (let k = 1; k <= 5; k++) await touch('touchMove', [[cx + k * 10, cy + k * 4]]);
+      await touch('touchEnd', []);
+      await page.waitForTimeout(400);
+      const v = await page.evaluate(() => ({ o: window.__phantasma.vc.orbit.slice(), p: window.__phantasma.vc.pan.slice() }));
+      if (!(v.o[0] < -0.2 && v.o[1] > 0.05 && v.p[0] === 0 && v.p[1] === 0)) fail(`${cfg.name}: touch drag should orbit, not pan ${JSON.stringify(v)}`);
+      for (let k = 0; k < 2; k++) { await touch('touchStart', [[cx, cy]]); await touch('touchEnd', []); await page.waitForTimeout(80); }
+      const r = await page.evaluate(() => window.__phantasma.vc.orbit.join(','));
+      if (r !== '0,0') fail(`${cfg.name}: double-tap did not reset orbit (${r})`);
+    } else {
+      await page.mouse.move(cx, cy); await page.mouse.down();
+      await page.mouse.move(cx + 60, cy + 20, { steps: 5 }); await page.mouse.up();
+      const v = await page.evaluate(() => ({ o: window.__phantasma.vc.orbit.slice(), p: window.__phantasma.vc.pan.slice() }));
+      if (!(v.o[0] < -0.2 && v.p[0] === 0)) fail(`${cfg.name}: mouse drag should orbit ${JSON.stringify(v)}`);
+      await page.keyboard.down('Shift');
+      await page.mouse.move(cx, cy); await page.mouse.down();
+      await page.mouse.move(cx + 60, cy, { steps: 5 }); await page.mouse.up();
+      await page.keyboard.up('Shift');
+      const v2 = await page.evaluate(() => ({ o: window.__phantasma.vc.orbit.slice(), p: window.__phantasma.vc.pan.slice() }));
+      if (!(v2.p[0] < -0.05 && Math.abs(v2.o[0] - v.o[0]) < 1e-9)) fail(`${cfg.name}: shift-drag should pan ${JSON.stringify(v2)}`);
+    }
+    const sl = await page.evaluate(() => {
+      const P = window.__phantasma, $ = id => document.getElementById(id);
+      const a = !$('orbitCtl').hidden && !$('tiltCtl').hidden;
+      P.select('cafe-wall');
+      return { a, b: $('orbitCtl').hidden && $('tiltCtl').hidden, hint3d: (P.select('anamorphic'), /orbit/.test($('hint').textContent)) };
+    });
+    if (!sl.a || !sl.b || !sl.hint3d) fail(`${cfg.name}: orbit controls/hint visibility ${JSON.stringify(sl)}`);
+  }
+
   await page.evaluate(() => window.__phantasma.select('rotating-snakes'));
   await page.waitForTimeout(200);
   await page.screenshot({ path: join(shots, `layout-${cfg.name}.png`) });
