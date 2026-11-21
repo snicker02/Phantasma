@@ -110,6 +110,25 @@ for (const cfg of configs) {
     await page.evaluate(() => { const P = window.__phantasma; if (P.S.ill.reveal) { P.S.reveal = true; P.draw(); P.S.reveal = false; } });
   }
 
+  // only applicable controls are shown
+  const vis = await page.evaluate(() => {
+    const P = window.__phantasma;
+    const names = () => [...document.querySelectorAll('#params .ctl')].filter(c => !c.hidden).map(c => c.querySelector('span').textContent.trim());
+    const cols = () => [...document.querySelectorAll('#colors .colrow')].filter(c => !c.hidden).map(c => c.textContent.trim());
+    const setOpt = (i, v) => { const el = document.querySelector(`#params [data-idx="${i}"]`); el.value = v; el.dispatchEvent(new Event('change')); };
+    const out = {};
+    P.select('fraser'); out.fraserChecks = [names().includes('Check twist'), cols().length];
+    setOpt(4, 1); out.fraserPlain = [names().includes('Check twist'), cols()];
+    P.select('grid'); setOpt(0, 1); out.hermann = [names().includes('Dot size'), cols()];
+    P.select('aftereffect'); setOpt(4, 1); out.rings = [names().includes('Arms'), names()[0]];
+    P.select('cafe-wall'); out.still = [document.getElementById('playBtn').hidden, document.getElementById('revealBtn').hidden];
+    P.select('troxler'); out.noReveal = [document.getElementById('revealBtn').hidden, document.getElementById('revealRow').hidden];
+    P.select('fraser'); setOpt(4, 0);
+    return out;
+  });
+  const exp = { fraserChecks: [true, 4], fraserPlain: [false, ['Strand A', 'Strand B', 'Background']], hermann: [false, ['Squares', 'Lines']], rings: [false, 'Ring density'], still: [true, false], noReveal: [true, true] };
+  for (const k in exp) if (JSON.stringify(vis[k]) !== JSON.stringify(exp[k])) fail(`${cfg.name} applicable controls ${k}: ${JSON.stringify(vis[k])}`);
+
   if (cfg.hasTouch) {
     // touch: one-finger drag pans, pinch zooms, double-tap resets
     await page.evaluate(() => window.__phantasma.select('cafe-wall'));

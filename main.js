@@ -4,7 +4,7 @@ import { Renderer } from './engine/gl.js';
 import { ViewController } from './engine/view.js';
 import { setupTabs } from './engine/tabs.js';
 
-export const VERSION = '1.0.1';
+export const VERSION = '1.1.0';
 const KEY = 'phantasma';
 const TAB_QUERY = '(max-width: 760px), (max-height: 500px) and (orientation: landscape)';
 const $ = id => document.getElementById(id);
@@ -97,12 +97,14 @@ function select(id, init = null) {
   $('infoWhy').textContent = ill.info.why;
   $('revealRow').hidden = !ill.reveal;
   $('revealLbl').textContent = ill.reveal || 'Reveal';
-  $('revealBtn').disabled = !ill.reveal;
-  $('revealBtn').title = ill.reveal ? ill.reveal + ' (R)' : 'Nothing to reveal here';
+  $('revealBtn').hidden = !ill.reveal;
+  $('revealBtn').title = ill.reveal ? ill.reveal + ' (R)' : '';
+  $('playBtn').hidden = !ill.animated;
+  $('speedCtl').hidden = !ill.animated;
   $('stareRow').hidden = ill.stare === undefined;
   $('photoRow').hidden = !ill.tex;
-  $('sec-colors').hidden = ill.colors.length === 0;
   syncReveal(); syncPlay();
+  paramRows = []; colorRows = [];
   buildParams(); buildColors();
   if (!init?.keepView) vc.reset();
   showErr('');
@@ -116,46 +118,71 @@ function remember() {
 }
 
 // ---------- parameter controls ----------
+// A param or colour may declare `show: params => bool` (only shown when it applies to the
+// current mode) and `n` may be a function of params (label changes with the mode).
+// Hidden values are kept, so switching back restores them.
+const label = (x, params) => (typeof x.n === 'function' ? x.n(params) : x.n);
+const applies = (x, params) => !x.show || x.show(params);
+let paramRows = [], colorRows = [];
+
+function refreshApplicable() {
+  for (const r of paramRows) {
+    r.wrap.hidden = !applies(r.p, S.params);
+    r.name.textContent = label(r.p, S.params) + ' ';
+    r.input.setAttribute('aria-label', label(r.p, S.params));
+  }
+  for (const r of colorRows) {
+    r.row.hidden = !applies(r.c, S.params);
+    r.name.textContent = label(r.c, S.params);
+  }
+  // only once the colour rows for this illusion exist, so the tab doesn't flicker away
+  if (colorRows.length === S.ill.colors.length) $('sec-colors').hidden = !colorRows.some(r => !r.row.hidden);
+}
+
 function buildParams() {
   const box = $('params');
   box.textContent = '';
-  S.ill.params.forEach((p, i) => {
+  paramRows = S.ill.params.map((p, i) => {
     const wrap = document.createElement('div'); wrap.className = 'ctl';
     const lab = document.createElement('label');
+    const name = document.createElement('span');
     const out = document.createElement('output');
-    lab.append(p.n + ' ', out);
+    lab.append(name, out);
     let input;
     if (p.opts) {
       input = document.createElement('select');
       p.opts.forEach((o, k) => { const op = document.createElement('option'); op.value = k; op.textContent = o; input.appendChild(op); });
       input.value = S.params[i];
-      out.textContent = '';
-      input.addEventListener('change', () => { S.params[i] = +input.value; remember(); dirty = true; });
+      input.addEventListener('change', () => { S.params[i] = +input.value; remember(); refreshApplicable(); dirty = true; });
     } else {
       input = document.createElement('input');
       input.type = 'range'; input.min = p.min; input.max = p.max; input.step = p.step; input.value = S.params[i];
       out.textContent = fmt(p, S.params[i]);
       input.addEventListener('input', () => {
-        S.params[i] = +input.value; out.textContent = fmt(p, S.params[i]); remember(); dirty = true;
+        S.params[i] = +input.value; out.textContent = fmt(p, S.params[i]); remember(); refreshApplicable(); dirty = true;
       });
     }
-    input.setAttribute('aria-label', p.n);
     input.dataset.idx = i;
     wrap.append(lab, input);
     box.appendChild(wrap);
+    return { p, wrap, name, input };
   });
+  refreshApplicable();
 }
 
 function buildColors() {
   const box = $('colors');
   box.textContent = '';
-  S.ill.colors.forEach((c, i) => {
+  colorRows = S.ill.colors.map((c, i) => {
     const row = document.createElement('label'); row.className = 'colrow';
+    const name = document.createElement('span');
     const inp = document.createElement('input'); inp.type = 'color'; inp.value = S.colors[i];
     inp.addEventListener('input', () => { S.colors[i] = inp.value; remember(); dirty = true; });
-    row.append(c.n, inp);
+    row.append(name, inp);
     box.appendChild(row);
+    return { c, row, name };
   });
+  refreshApplicable();
 }
 
 $('randBtn').addEventListener('click', () => {
@@ -166,7 +193,7 @@ $('randBtn').addEventListener('click', () => {
     const t = (Math.random() + Math.random()) / 2;
     return snap(p, p.min + t * (p.max - p.min));
   });
-  stopStare(); remember(); buildParams(); dirty = true;
+  stopStare(); remember(); buildParams(); refreshApplicable(); dirty = true;
 });
 $('resetBtn').addEventListener('click', () => {
   S.params = defaults(S.ill).params; stopStare(); remember(); buildParams(); dirty = true;

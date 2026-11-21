@@ -59,7 +59,7 @@ vec3 illusion(vec2 p){
       { n: 'Disc radius', min: 0.1, max: 0.9, step: 0.01, v: 0.45 },
       { n: 'Inner offset', min: 0, max: 1, step: 0.01, v: 0 },
       { n: 'Wobble', min: 0, max: 0.05, step: 0.0005, v: 0.012 },
-      { n: 'Wobble speed', min: 0.1, max: 5, step: 0.05, v: 1.5 },
+      { n: 'Wobble speed', min: 0.1, max: 5, step: 0.05, v: 1.5, show: p => p[4] > 0 },
     ],
     colors: [{ n: 'Brick A', v: '#000000' }, { n: 'Brick B', v: '#ffffff' }],
     info: {
@@ -86,7 +86,7 @@ vec3 illusion(vec2 p){
       { n: 'Square size', min: 0.01, max: 0.06, step: 0.0005, v: 0.026 },
       { n: 'Tilt °', min: -45, max: 45, step: 1, v: 20 },
       { n: 'Pulse', min: 0, max: 0.3, step: 0.005, v: 0.12 },
-      { n: 'Pulse speed', min: 0.2, max: 3, step: 0.05, v: 0.9 },
+      { n: 'Pulse speed', min: 0.2, max: 3, step: 0.05, v: 0.9, show: p => p[5] > 0 },
       { n: 'Edge width', min: 0.002, max: 0.012, step: 0.0005, v: 0.005 },
     ],
     colors: [{ n: 'Background', v: '#9a9a9a' }, { n: 'Dark edge', v: '#000000' }, { n: 'Light edge', v: '#ffffff' }],
@@ -187,8 +187,8 @@ vec3 illusion(vec2 p){
     id: 'aftereffect', name: 'Motion aftereffect', cat: 'Motion', animated: true,
     stare: 3,
     params: [
-      { n: 'Arms', min: 1, max: 12, step: 1, v: 4 },
-      { n: 'Tightness', min: 1, max: 12, step: 0.1, v: 5 },
+      { n: 'Arms', min: 1, max: 12, step: 1, v: 4, show: p => p[4] === 0 },
+      { n: p => ['Tightness', 'Ring density', 'Bar density'][p[4]], min: 1, max: 12, step: 0.1, v: 5 },
       { n: 'Spin speed', min: -3, max: 3, step: 0.05, v: 1 },
       { n: 'Stare (s)', min: 5, max: 60, step: 1, v: 25 },
       { n: 'Pattern', opts: ['Spiral', 'Rings', 'Waterfall'], v: 0 },

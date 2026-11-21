@@ -78,9 +78,9 @@ vec3 illusion(vec2 p){
       { n: 'Strand size', min: 0.3, max: 3, step: 0.05, v: 0.6 },
       { n: 'Cord twist', min: -3, max: 3, step: 0.05, v: 0.75 },
       { n: 'Background', opts: ['Spiral checks', 'Plain'], v: 0 },
-      { n: 'Check twist', min: -3, max: 3, step: 0.05, v: -0.6 },
+      { n: 'Check twist', min: -3, max: 3, step: 0.05, v: -0.6, show: p => p[4] === 0 },
     ],
-    colors: [{ n: 'Strand A', v: '#111111' }, { n: 'Strand B', v: '#f5f5f5' }, { n: 'Check A', v: '#3c8c5a' }, { n: 'Check B', v: '#4b6cc4' }],
+    colors: [{ n: 'Strand A', v: '#111111' }, { n: 'Strand B', v: '#f5f5f5' }, { n: p => p[4] === 0 ? 'Check A' : 'Background', v: '#3c8c5a' }, { n: 'Check B', v: '#4b6cc4', show: p => p[4] === 0 }],
     info: {
       see: 'A spiral winding into the centre.',
       why: 'Every cord is a perfect circle. The tilted black and white strands each signal a local orientation, and the visual system integrates those tilts into a continuous spiral. Try following one ring with your finger, or press Reveal.',
@@ -246,8 +246,8 @@ vec3 illusion(vec2 p){
       { n: 'Disc radius', min: 0.05, max: 0.4, step: 0.005, v: 0.18 },
       { n: 'Mouth angle °', min: 20, max: 120, step: 1, v: 60 },
       { n: 'Outline triangle', opts: ['On', 'Off'], v: 0 },
-      { n: 'V length', min: 0.1, max: 0.45, step: 0.005, v: 0.27 },
-      { n: 'Line width', min: 0.004, max: 0.03, step: 0.001, v: 0.01 },
+      { n: 'V length', min: 0.1, max: 0.45, step: 0.005, v: 0.27, show: p => p[3] === 0 },
+      { n: 'Line width', min: 0.004, max: 0.03, step: 0.001, v: 0.01, show: p => p[3] === 0 },
     ],
     colors: [{ n: 'Paper', v: '#ffffff' }, { n: 'Shapes', v: '#111111' }],
     info: {
