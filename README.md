@@ -1,6 +1,6 @@
 # Phantasma — optical illusion lab
 
-**v1.1.0**
+**v1.2.0**
 
 Twenty-one classic optical illusions, each rebuilt as a live, fully parametric WebGL1 shader. Every illusion has sliders for its geometry and colours, a short note on what to look for and why it works, and — where it makes sense — a **Reveal** toggle that shows you the truth.
 
@@ -28,7 +28,9 @@ No dependencies, no build step. Open `index.html` from any static host (GitHub P
 - **View**: pan, zoom and rotate. Choose 1×, 4× or 9× supersampling and set the animation speed.
 - **Export**:
   - PNG up to 4096², rendered at full resolution (all widths are in world units, so the image looks the same at any size)
-  - WebM video recording
+  - **MP4 video (default)**: frames are rendered one at a time at exact time steps, encoded to H.264 with WebCodecs, and written by a built-in MP4 muxer (`engine/mp4.js`), so no frames are dropped. Choose the size (screen, 720p, 1080p, 1080 square, 1080×1920 vertical, 4K), 30 or 60 fps, and a length of 2–30 s. Browsers without WebCodecs H.264 but with MediaRecorder MP4 (older Safari) record the view in real time instead.
+  - WebM video (real-time capture of the view)
+  - Video controls only appear for animated illusions
   - a shareable link that encodes the illusion, its parameters and colours in the URL hash
 
 ## Controls
@@ -52,6 +54,7 @@ There is no "Confirm changes before applying" mode: every control is a uniform c
 index.html          markup
 style.css           desktop + docked phone layout, touch sizing
 main.js             UI, state, render loop, stare tests, export, share links
+engine/mp4.js       dependency-free H.264 MP4 muxer + WebCodecs config probe
 engine/prelude.js   shared GLSL (AA helpers, SDFs) + supersampling main()
 engine/gl.js        WebGL1 renderer, program cache, photo texture
 engine/view.js      pointer-event pan / pinch / twist / double-tap controller
@@ -67,10 +70,12 @@ To add an illusion, append an object to one of the `illusions/*.js` arrays. It n
 ```
 node tools/validate-shaders.mjs   # glslangValidator, every shader at every quality level
 node tools/layout-test.mjs        # headless Chrome: 390×844 + 844×390 touch, 1440×900
+node tools/video-test.mjs         # MP4 + WebM export, verified with ffprobe / ffmpeg full decode
 ```
 
 ## Changelog
 
+- **1.2.0** — MP4 export is now the default. It renders frame-exact through WebCodecs H.264 and a built-in muxer, with selectable size and frame rate. WebM is still available, and MP4 falls back to real-time MediaRecorder where WebCodecs H.264 is missing. Video controls are hidden for still illusions.
 - **1.1.0** — The panel now shows only the controls that apply to the current illusion and mode. Mode-specific sliders and colours hide when their mode is off (e.g. *Check twist* when the Fraser background is plain, *Dot size* in Hermann mode, *Wobble speed* when wobble is 0), and labels follow the mode (*Tightness* → *Ring density*). The Reveal, Play and animation-speed controls only appear for illusions that have them.
 - **1.0.1** — Added Claude AI credit to the app and README.
 - **1.0.0** — First release: 21 illusions, Reveal, stare tests, photo afterimage, PNG/WebM export, share links, phone layout.

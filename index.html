@@ -6,7 +6,7 @@
 <title>Phantasma — optical illusion lab</title>
 <meta name="description" content="Parametric optical illusions rendered live in WebGL: geometric, motion, lightness and colour.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Ccircle cx=%228%22 cy=%228%22 r=%227%22 fill=%22%23d6a84a%22/%3E%3Ccircle cx=%228%22 cy=%228%22 r=%224%22 fill=%22%23111%22/%3E%3C/svg%3E">
-<link rel="stylesheet" href="style.css?v=1.1.0">
+<link rel="stylesheet" href="style.css?v=1.2.0">
 </head>
 <body>
 <header id="top">
@@ -86,9 +86,24 @@
             <option value="2048x2048">2048 × 2048</option><option value="4096x4096">4096 × 4096</option>
           </select>
         </div>
-        <div class="row actions"><button id="pngBtn" type="button" class="accent">Save PNG</button></div>
-        <div class="ctl"><label>Video length <output id="recOut"></output></label><input id="recLen" type="range" min="2" max="30" step="1" value="6"></div>
-        <div class="row actions"><button id="recBtn" type="button">Record WebM</button></div>
+        <div class="row actions"><button id="pngBtn" type="button">Save PNG</button></div>
+        <div id="videoCtl">
+          <div class="ctl"><label>Video format</label>
+            <select id="vidFmt"><option value="mp4" selected>MP4 (H.264)</option><option value="webm">WebM</option></select>
+          </div>
+          <div class="ctl" id="vidSizeCtl"><label>Video size</label>
+            <select id="vidSize">
+              <option value="screen">Screen</option><option value="1280x720">1280 × 720</option>
+              <option value="1920x1080" selected>1920 × 1080</option><option value="1080x1080">1080 × 1080 square</option>
+              <option value="1080x1920">1080 × 1920 vertical</option><option value="3840x2160">3840 × 2160</option>
+            </select>
+          </div>
+          <div class="ctl" id="vidFpsCtl"><label>Frame rate</label>
+            <select id="vidFps"><option value="30">30 fps</option><option value="60" selected>60 fps</option></select>
+          </div>
+          <div class="ctl"><label>Video length <output id="recOut"></output></label><input id="recLen" type="range" min="2" max="30" step="1" value="6"></div>
+          <div class="row actions"><button id="recBtn" type="button" class="accent">Export MP4</button></div>
+        </div>
         <div class="row actions"><button id="linkBtn" type="button">Copy link to this setup</button></div>
         <p class="note" id="exportNote"></p>
       </section>
@@ -96,6 +111,6 @@
     </div>
   </aside>
 </main>
-<script type="module" src="main.js?v=1.1.0"></script>
+<script type="module" src="main.js?v=1.2.0"></script>
 </body>
 </html>
