@@ -1,23 +1,28 @@
 # Phantasma — optical illusion lab
 
-**v1.2.0**
+**v1.3.0**
 
-Twenty-one classic optical illusions, each rebuilt as a live, fully parametric WebGL1 shader. Every illusion has sliders for its geometry and colours, a short note on what to look for and why it works, and — where it makes sense — a **Reveal** toggle that shows you the truth.
+Thirty-six classic optical illusions, each rebuilt as a live, fully parametric WebGL1 shader. Every illusion has sliders for its geometry and colours, a short note on what to look for and why it works, and — where it makes sense — a **Reveal** toggle that shows you the truth.
 
 No dependencies, no build step. Open `index.html` from any static host (GitHub Pages works as-is).
 
 ## Illusions
 
-| Geometric | Motion | Lightness & colour |
-|---|---|---|
-| Café wall | Rotating snakes (peripheral drift) | Scintillating / Hermann grid |
-| Zöllner lines | Ouchi | Simultaneous contrast (gradient bar / split squares) |
-| Fraser spiral | Pinna–Brelstaff rings | White's illusion |
-| Hering & Wundt | Enigma | Colour afterimage (stare test) |
-| Müller-Lyer | Lilac chaser | Photo afterimage — load your own photo (stare test) |
-| Ebbinghaus circles | Motion aftereffect (stare test) | Troxler fading |
-| Kanizsa triangle | Stepping feet | |
-| | Moiré | |
+36 illusions in four groups:
+
+| Geometric | Ambiguous & impossible | Motion | Lightness & colour |
+|---|---|---|---|
+| Café wall | Necker cube | Rotating snakes (peripheral drift) | Scintillating / Hermann grid |
+| Zöllner lines | Penrose triangle | Ouchi | Simultaneous contrast |
+| Fraser spiral | Rubin vase | Pinna–Brelstaff rings | White's illusion |
+| Hering & Wundt | | Enigma | Colour afterimage (stare test) |
+| Müller-Lyer | | Lilac chaser | Photo afterimage (stare test) |
+| Ebbinghaus circles | | Motion aftereffect (stare test) | Troxler fading |
+| Kanizsa triangle | | Stepping feet | Shadow checker |
+| Ponzo | | Moiré | Cornsweet edge |
+| Poggendorff | | Barber pole | Mach bands |
+| Jastrow | | Breathing square | Munker colour |
+| Orbison | | Wagon wheel | Ehrenstein & neon spreading |
 
 ## Features
 
@@ -25,6 +30,7 @@ No dependencies, no build step. Open `index.html` from any static host (GitHub P
 - **Stare tests**: a countdown for the afterimage and motion-aftereffect illusions, then an automatic switch to the test image.
 - **Photo afterimage**: load any photo. It's shown with its colours inverted (brightness kept), then switched to greyscale, and the afterimage makes it look coloured.
 - **Colours**: every colour can be edited, inverted or reset. Settings are remembered for each illusion.
+- **Reset everything** (bottom of the View tab, tap twice to confirm): returns every illusion's settings and colours, the view, quality, speed and export options to their defaults, and clears the loaded photo and saved tab.
 - **View**: pan, zoom and rotate. Choose 1×, 4× or 9× supersampling and set the animation speed.
 - **Export**:
   - PNG up to 4096², rendered at full resolution (all widths are in world units, so the image looks the same at any size)
@@ -59,7 +65,7 @@ engine/prelude.js   shared GLSL (AA helpers, SDFs) + supersampling main()
 engine/gl.js        WebGL1 renderer, program cache, photo texture
 engine/view.js      pointer-event pan / pinch / twist / double-tap controller
 engine/tabs.js      phone tab layout
-illusions/*.js      illusion definitions: params, colours, info text, GLSL
+illusions/*.js      illusion definitions by category: params, colours, info text, GLSL
 tools/              validation scripts (not needed at runtime)
 ```
 
@@ -75,6 +81,13 @@ node tools/video-test.mjs         # MP4 + WebM export, verified with ffprobe / f
 
 ## Changelog
 
+- **1.3.0** — Added 15 illusions (36 total) and a new *Ambiguous & impossible* category:
+  - Geometric: Ponzo, Poggendorff, Jastrow, Orbison
+  - Ambiguous & impossible: Necker cube, Penrose triangle, Rubin vase
+  - Motion: barber pole, breathing square, wagon wheel
+  - Lightness & colour: shadow checker, Cornsweet edge, Mach bands, Munker colour, Ehrenstein & neon spreading
+
+  Also added **Reset everything** (two-tap confirm).
 - **1.2.0** — MP4 export is now the default. It renders frame-exact through WebCodecs H.264 and a built-in muxer, with selectable size and frame rate. WebM is still available, and MP4 falls back to real-time MediaRecorder where WebCodecs H.264 is missing. Video controls are hidden for still illusions.
 - **1.1.0** — The panel now shows only the controls that apply to the current illusion and mode. Mode-specific sliders and colours hide when their mode is off (e.g. *Check twist* when the Fraser background is plain, *Dot size* in Hermann mode, *Wobble speed* when wobble is 0), and labels follow the mode (*Tightness* → *Ring density*). The Reveal, Play and animation-speed controls only appear for illusions that have them.
 - **1.0.1** — Added Claude AI credit to the app and README.

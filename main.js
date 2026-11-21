@@ -5,7 +5,7 @@ import { ViewController } from './engine/view.js';
 import { setupTabs } from './engine/tabs.js';
 import { MP4Muxer, findAvcConfig } from './engine/mp4.js';
 
-export const VERSION = '1.2.0';
+export const VERSION = '1.3.0';
 const KEY = 'phantasma';
 const TAB_QUERY = '(max-width: 760px), (max-height: 500px) and (orientation: landscape)';
 const $ = id => document.getElementById(id);
@@ -577,9 +577,58 @@ $('linkBtn').addEventListener('click', async () => {
   catch { note.textContent = location.href; }
 });
 
+// ---------- reset everything ----------
+// Two-tap confirm (no modal): first tap arms the button for 4 s, second tap resets.
+const resetAllBtn = $('resetAll');
+let resetArmed = 0;
+function disarmReset() {
+  clearTimeout(resetArmed); resetArmed = 0;
+  resetAllBtn.classList.remove('armed');
+  resetAllBtn.textContent = 'Reset everything';
+}
+resetAllBtn.addEventListener('click', () => {
+  if (S.exporting || rec) { resetAllBtn.textContent = 'Finish the export first'; setTimeout(disarmReset, 1500); return; }
+  if (!resetArmed) {
+    resetAllBtn.classList.add('armed');
+    resetAllBtn.textContent = 'Tap again to reset everything';
+    resetArmed = setTimeout(disarmReset, 4000);
+    return;
+  }
+  disarmReset();
+  resetEverything();
+  resetAllBtn.textContent = 'Everything reset ✓';
+  setTimeout(() => { if (!resetArmed) resetAllBtn.textContent = 'Reset everything'; }, 1600);
+});
+function resetEverything() {
+  clearTimeout(saveTimer);
+  try {
+    for (const k of Object.keys(localStorage)) if (k.startsWith(KEY + '.')) localStorage.removeItem(k);
+  } catch { /* storage unavailable */ }
+  store = { p: {}, c: {} };
+  // global preferences
+  S.playing = true; S.speed = 1; S.quality = 2; S.time = 0;
+  speedIn.value = 1; $('speedOut').textContent = '1.00×';
+  qualIn.value = 2;
+  $('pngSize').value = '2';
+  vidFmt.value = vidFmt.querySelector('option[value=mp4]').disabled ? 'webm' : 'mp4';
+  vidSize.value = '1920x1080'; vidFps.value = '60'; recLen.value = 6;
+  syncVideoUI();
+  note.textContent = '';
+  renderer.clearImage();
+  if (document.fullscreenElement) document.exitFullscreen?.();
+  try { history.replaceState(null, '', location.pathname + location.search); } catch { /* sandboxed */ }
+  // first illusion with defaults (also resets reveal, stare, view, params, colours)
+  select(ILLUSIONS[0].id);
+  tabs.select('sec-illusion');
+  $('secs').scrollTop = 0;
+  $('hint').hidden = false;
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => { $('hint').hidden = true; }, 6000);
+}
+
 // ---------- boot ----------
 $('ver').textContent = 'v' + VERSION;
-setupTabs({
+const tabs = setupTabs({
   strip: $('tabstrip'),
   sections: [...document.querySelectorAll('#secs .sec')],
   storageKey: KEY + '.tab',
@@ -593,4 +642,4 @@ syncViewInputs();
 requestAnimationFrame(frame);
 
 // test / debugging hook
-window.__phantasma = { VERSION, ILLUSIONS, S, select, draw, renderer, vc };
+window.__phantasma = { VERSION, ILLUSIONS, S, select, draw, renderer, vc, resetEverything, get store() { return store; } };

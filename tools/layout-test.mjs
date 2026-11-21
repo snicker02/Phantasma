@@ -129,6 +129,41 @@ for (const cfg of configs) {
   const exp = { fraserChecks: [true, 4], fraserPlain: [false, ['Strand A', 'Strand B', 'Background']], hermann: [false, ['Squares', 'Lines']], rings: [false, 'Ring density'], still: [true, false], noReveal: [true, true] };
   for (const k in exp) if (JSON.stringify(vis[k]) !== JSON.stringify(exp[k])) fail(`${cfg.name} applicable controls ${k}: ${JSON.stringify(vis[k])}`);
 
+  // Reset everything: one tap only arms, second tap restores defaults everywhere
+  {
+    const res = await page.evaluate(async () => {
+      const P = window.__phantasma;
+      const $ = id => document.getElementById(id);
+      P.select('fraser');
+      const sl = document.querySelector('#params [data-idx="0"]'); sl.value = 13; sl.dispatchEvent(new Event('input'));
+      const ci = document.querySelector('#colors input'); ci.value = '#ff00ff'; ci.dispatchEvent(new Event('input'));
+      $('speed').value = 2.5; $('speed').dispatchEvent(new Event('input'));
+      $('quality').value = 3; $('quality').dispatchEvent(new Event('change'));
+      $('vidFmt').value = 'webm'; $('vidFmt').dispatchEvent(new Event('change'));
+      P.vc.set({ zoom: 3, rot: 1, pan: [0.4, 0.2] });
+      await new Promise(r => setTimeout(r, 700));        // let state + hash persist
+      const before = { keys: Object.keys(localStorage).filter(k => k.startsWith('phantasma.')).length, hash: location.hash.length };
+      $('resetAll').click();
+      const armedOnly = P.S.ill.id === 'fraser' && P.S.params[0] === 13 && $('resetAll').classList.contains('armed');
+      $('resetAll').click();
+      const s = P.store;
+      const d = P.ILLUSIONS[0];
+      return {
+        before, armedOnly,
+        id: P.S.ill.id, paramsDefault: JSON.stringify(P.S.params) === JSON.stringify(d.params.map(p => p.v)),
+        fraserForgotten: !s.p.fraser, speed: P.S.speed, quality: P.S.quality, vidFmt: $('vidFmt').value,
+        zoom: P.vc.zoom, pan: P.vc.pan.join(','), rot: P.vc.rot, hasTex: P.renderer.hasTex,
+        keysAfter: Object.keys(localStorage).filter(k => k.startsWith('phantasma.') && k !== 'phantasma.tab'),
+      };
+    });
+    const ok = res.before.keys > 0 && res.armedOnly && res.id === 'cafe-wall' && res.paramsDefault && res.fraserForgotten &&
+      res.speed === 1 && res.quality === 2 && res.vidFmt === 'mp4' && res.zoom === 1 && res.pan === '0,0' && res.rot === 0 && !res.hasTex;
+    if (!ok) fail(`${cfg.name}: reset everything ${JSON.stringify(res)}`);
+    await page.reload(); await page.waitForFunction(() => window.__phantasma);
+    const after = await page.evaluate(() => ({ id: window.__phantasma.S.ill.id, p0: window.__phantasma.S.params[0], speed: window.__phantasma.S.speed }));
+    if (after.id !== 'cafe-wall' || after.speed !== 1) fail(`${cfg.name}: reset did not persist across reload ${JSON.stringify(after)}`);
+  }
+
   if (cfg.hasTouch) {
     // touch: one-finger drag pans, pinch zooms, double-tap resets
     await page.evaluate(() => window.__phantasma.select('cafe-wall'));
