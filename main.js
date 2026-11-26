@@ -5,7 +5,7 @@ import { ViewController } from './engine/view.js';
 import { setupTabs } from './engine/tabs.js';
 import { MP4Muxer, findAvcConfig } from './engine/mp4.js';
 
-export const VERSION = '1.4.0';
+export const VERSION = '1.5.0';
 const KEY = 'phantasma';
 const TAB_QUERY = '(max-width: 760px), (max-height: 500px) and (orientation: landscape)';
 const $ = id => document.getElementById(id);
@@ -265,7 +265,10 @@ $('stareBtn').addEventListener('click', () => {
 // ---------- photo ----------
 $('photoIn').addEventListener('change', async e => {
   const f = e.target.files[0];
-  if (!f) return;
+  e.target.value = '';
+  if (f) await loadPhoto(f);
+});
+async function loadPhoto(f) {
   try {
     const img = await loadImage(f);
     const k = Math.min(1, 2048 / Math.max(img.width, img.height));
@@ -275,8 +278,7 @@ $('photoIn').addEventListener('change', async e => {
     renderer.setImage(c);
     stopStare(); dirty = true;
   } catch { showErr('Could not read that image.'); }
-  e.target.value = '';
-});
+}
 function loadImage(file) {
   return new Promise((res, rej) => {
     const url = URL.createObjectURL(file);
@@ -661,3 +663,17 @@ requestAnimationFrame(frame);
 
 // test / debugging hook
 window.__phantasma = { VERSION, ILLUSIONS, S, select, draw, renderer, vc, resetEverything, get store() { return store; } };
+
+// ---------- shared image shelf (snicker02.github.io/shared/bridge.js) ----------
+// The canvas has no preserved drawing buffer, so draw and read it back in the same task.
+if (window.SnickerShelf) {
+  window.SnickerShelf.mount({
+    app: 'Phantasma',
+    button: $('shelfBtn'),
+    onImage: f => loadPhoto(f),
+    getImage: () => { draw(); return new Promise((res, rej) => canvas.toBlob(b => b ? res(b) : rej(new Error('encode failed')), 'image/png')); },
+    getMeta: () => ({ name: `phantasma-${S.ill.id}.png` }),
+  });
+} else {
+  $('shelfBtn').hidden = true;
+}
