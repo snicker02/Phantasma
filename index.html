@@ -6,7 +6,7 @@
 <title>Phantasma — optical illusion lab</title>
 <meta name="description" content="Parametric optical illusions rendered live in WebGL: geometric, motion, lightness and colour.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Ccircle cx=%228%22 cy=%228%22 r=%227%22 fill=%22%23d6a84a%22/%3E%3Ccircle cx=%228%22 cy=%228%22 r=%224%22 fill=%22%23111%22/%3E%3C/svg%3E">
-<link rel="stylesheet" href="style.css?v=1.4.0">
+<link rel="stylesheet" href="style.css?v=1.5.0">
 </head>
 <body>
 <header id="top">
@@ -18,6 +18,7 @@
     <button id="revealBtn" type="button" title="Reveal the truth (R)">Reveal</button>
     <button id="playBtn" type="button" title="Play / pause (Space)">Pause</button>
     <button id="fsBtn" type="button" title="Fullscreen (F)">⛶</button>
+    <button id="shelfBtn" type="button" title="Shared image shelf: send this view to another snicker02 app, or load a photo">⇄ Shelf</button>
   </div>
 </header>
 
@@ -115,6 +116,7 @@
     </div>
   </aside>
 </main>
-<script type="module" src="main.js?v=1.4.0"></script>
+<script src="https://snicker02.github.io/shared/bridge.js"></script>
+<script type="module" src="main.js?v=1.5.0"></script>
 </body>
 </html>

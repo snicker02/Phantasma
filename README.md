@@ -1,6 +1,6 @@
 # Phantasma — optical illusion lab
 
-**v1.4.0**
+**v1.5.0**
 
 Forty-two classic optical illusions, each rebuilt as a live, fully parametric WebGL1 shader. That includes real 3D scenes, ray-traced and raymarched in the fragment shader, that you can orbit around. Every illusion has sliders for its geometry and colours, a short note on what to look for and why it works, and — where it makes sense — a **Reveal** toggle that shows you the truth.
 
@@ -80,6 +80,7 @@ node tools/video-test.mjs         # MP4 + WebM export, verified with ffprobe / f
 
 ## Changelog
 
+- **1.5.0**: **⇄ Shelf** in the top bar. You can send the view to other snicker02 apps, and load a shelf image as the photo.
 - **1.4.0** — New **3D** category with six illusions:
   - Penrose sculpture: a real object of three beams that only closes from one viewpoint
   - Ames room: a projective-distorted room whose planes are ray-traced exactly, so orbiting shows the real trapezoid
@@ -104,3 +105,13 @@ node tools/video-test.mjs         # MP4 + WebM export, verified with ffprobe / f
 ---
 
 Created with help from Claude AI
+
+## Shared image shelf
+
+The **⇄ Shelf** button opens the image shelf shared by all apps on [snicker02.github.io](https://snicker02.github.io/#shelf). It stores images in this browser only (IndexedDB), and every app on the site can read the same shelf.
+
+- **Save current** puts the current view on the shelf.
+- **Send to ↗** opens another app in a new tab with the image already loaded.
+- **Load here** brings a shelf image into this app as the photo, the same as Load photo. Opening the app with `?shelf=<id>` does the same on start, which is how Send to works.
+
+The shelf code lives in [`snicker02.github.io/shared/bridge.js`](https://github.com/snicker02/snicker02.github.io/blob/main/shared/bridge.js). If it can't load (for example when you're offline), the app works as before and the button is hidden.
