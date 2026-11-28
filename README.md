@@ -102,6 +102,10 @@ node tools/video-test.mjs         # MP4 + WebM export, verified with ffprobe / f
 - **1.0.1** — Added Claude AI credit to the app and README.
 - **1.0.0** — First release: 21 illusions, Reveal, stare tests, photo afterimage, PNG/WebM export, share links, phone layout.
 
+## License
+
+MIT — see [LICENSE](LICENSE).
+
 ---
 
 Created with help from Claude AI
@@ -115,7 +119,3 @@ The **⇄ Shelf** button opens the image shelf shared by all apps on [snicker02.
 - **Load here** brings a shelf image into this app as the photo, the same as Load photo. Opening the app with `?shelf=<id>` does the same on start, which is how Send to works.
 
 The shelf code lives in [`snicker02.github.io/shared/bridge.js`](https://github.com/snicker02/snicker02.github.io/blob/main/shared/bridge.js). If it can't load (for example when you're offline), the app works as before and the button is hidden.
-
-## License
-
-MIT — see [LICENSE](LICENSE).
