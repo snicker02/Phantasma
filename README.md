@@ -102,6 +102,10 @@ node tools/video-test.mjs         # MP4 + WebM export, verified with ffprobe / f
 - **1.0.1** — Added Claude AI credit to the app and README.
 - **1.0.0** — First release: 21 illusions, Reveal, stare tests, photo afterimage, PNG/WebM export, share links, phone layout.
 
+## License
+
+MIT — see [LICENSE](LICENSE).
+
 ---
 
 Created with help from Claude AI
